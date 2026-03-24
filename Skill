@@ -1,53 +1,66 @@
 -- =============================================
---  SP Info GUI - Skill Points em tempo real
---  LocalScript (coloque em StarterPlayerScripts)
+--  SP Info GUI - Para Delta Executor
+--  Cole e execute direto no Delta!
 -- =============================================
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
 
 -- =============================================
---  CONFIGURAÇÃO DO VALOR DE SKILL POINTS
---  Mude o nome se no seu jogo for diferente!
+--  CONFIGURAÇÃO (mude aqui se precisar)
 -- =============================================
 local LEADERSTATS_NAME = "leaderstats"
-local SP_VALUE_NAME = "SkillPoints"  -- ←←← ALTERE AQUI se o seu for "SP", "Points", etc.
-
--- Espera o leaderstats carregar
-local leaderstats = player:WaitForChild(LEADERSTATS_NAME)
-local skillPoints = leaderstats:WaitForChild(SP_VALUE_NAME)
+local SP_VALUE_NAME     = "SkillPoints"   -- ←←← TROQUE AQUI se no seu jogo for "SP", "Points", "SkillPoint" etc.
 
 -- =============================================
---  CRIAÇÃO DO GUI
+--  REMOVE GUI ANTIGA (evita duplicação)
+-- =============================================
+local oldGui = player:FindFirstChild("PlayerGui") and player.PlayerGui:FindFirstChild("SP_Info_GUI_Delta")
+if oldGui then
+    oldGui:Destroy()
+end
+
+-- =============================================
+--  ESPERA OS DADOS CARREGAREM
+-- =============================================
+local leaderstats = player:WaitForChild(LEADERSTATS_NAME, 10)
+local skillPoints = leaderstats and leaderstats:WaitForChild(SP_VALUE_NAME, 10)
+
+if not skillPoints then
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "SP Info";
+        Text = "Não encontrei o SkillPoints!\nVerifique o nome na configuração.";
+        Duration = 5;
+    })
+    return
+end
+
+-- =============================================
+--  CRIA O GUI
 -- =============================================
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "SP_Info_GUI"
+screenGui.Name = "SP_Info_GUI_Delta"
 screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Name = "SP_Frame"
-frame.Size = UDim2.new(0, 220, 0, 70)
+frame.Size = UDim2.new(0, 240, 0, 80)
 frame.Position = UDim2.new(0, 20, 0, 20)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.BackgroundTransparency = 0.3
+frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+frame.BackgroundTransparency = 0.25
 frame.BorderSizePixel = 0
 frame.Parent = screenGui
 
--- Cantos arredondados
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 12)
-uiCorner.Parent = frame
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 16)
+corner.Parent = frame
 
--- Sombra suave (opcional, fica bonito)
-local uiStroke = Instance.new("UIStroke")
-uiStroke.Color = Color3.fromRGB(0, 170, 255)
-uiStroke.Thickness = 2
-uiStroke.Transparency = 0.4
-uiStroke.Parent = frame
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(0, 200, 255)
+stroke.Thickness = 3
+stroke.Transparency = 0.3
+stroke.Parent = frame
 
--- Texto principal
 local label = Instance.new("TextLabel")
 label.Size = UDim2.new(1, 0, 1, 0)
 label.BackgroundTransparency = 1
@@ -60,15 +73,19 @@ label.Parent = frame
 -- =============================================
 --  ATUALIZAÇÃO EM TEMPO REAL
 -- =============================================
-local function updateText()
-	label.Text = "SP: " .. skillPoints.Value
+local function update()
+    label.Text = "SP: " .. tostring(skillPoints.Value)
 end
 
--- Atualiza imediatamente e toda vez que mudar
-updateText()
-skillPoints.Changed:Connect(updateText)
+update()
+skillPoints.Changed:Connect(update)
+skillPoints:GetPropertyChangedSignal("Value"):Connect(update)
 
--- Caso o valor seja destruído/recarregado (raro)
-skillPoints:GetPropertyChangedSignal("Value"):Connect(updateText)
+-- Notificação de sucesso
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "✅ SP Info GUI";
+    Text = "Carregado com sucesso!\nAtualizando em tempo real.";
+    Duration = 4;
+})
 
-print("✅ SP Info GUI carregado com sucesso!")
+print("SP Info GUI (Delta) carregado!")
