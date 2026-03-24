@@ -13,9 +13,9 @@ if player.PlayerGui:FindFirstChild("SP_Menu_GUI") then
     player.PlayerGui.SP_Menu_GUI:Destroy()
 end
 
--- ====================== ENCONTRA SP DA TELA ======================
+-- ====================== ENCONTRA SP DA TELA ====================== 
 local gameSPLabel = nil
-local function findLeftSP()
+local function findLeftSP() 
     local candidates = {}
     for _, obj in ipairs(player.PlayerGui:GetDescendants()) do
         if obj:IsA("TextLabel") and obj.Text:find("SP:") then
@@ -35,16 +35,16 @@ local function findLeftSP()
     return true
 end
 
--- ====================== ENCONTRA VALOR INTERNO REAL ======================
+-- ====================== ENCONTRA VALOR INTERNO REAL ====================== 
 local skillValue = nil
-local function findRealSPValue()
+local function findRealSPValue() 
     for _, v in ipairs(player:GetDescendants()) do
         if (v:IsA("IntValue") or v:IsA("NumberValue")) then
             local name = v.Name:lower()
             if name:find("sp") or name:find("skill") or name:find("point") or
                name:find("habilidade") or name:find("pontos") then
                 skillValue = v
-                print("✅ Valor REAL encontrado! Nome: " .. v.Name .. " | Valor: " .. v.Value)
+                print("Valor REAL encontrado! Nome: " .. v.Name .. " | Valor: " .. v.Value)
                 return true
             end
         end
@@ -54,32 +54,32 @@ end
 
 -- Espera encontrar os dois
 local start = tick()
-drepeat
+d repeat
     findLeftSP()
     findRealSPValue()
     task.wait(0.4)
 until (gameSPLabel and skillValue) or (tick() - start > 12)
 
 if not gameSPLabel then
-    StarterGui:SetCore("SendNotification", {Title="❌ Erro", Text="Não encontrou SP na tela.", Duration=6})
+    StarterGui:SetCore("SendNotification", {Title="Erro", Text="Nao encontrou SP na tela.", Duration=6})
     return
 end
 
--- ====================== HELPER: NOTIFICAÇÃO ====================== 
-local function notify(title, text, duration)
+-- ====================== HELPER: NOTIFICACAO ====================== 
+local function notify(title, text, duration) 
     StarterGui:SetCore("SendNotification", {Title=title, Text=text, Duration=duration or 5})
 end
 
 -- ====================== HELPER: CRIAR BORDA ARREDONDADA ====================== 
-local function addCorner(parent, radius)
+local function addCorner(parent, radius) 
     local c = Instance.new("UICorner")
     c.CornerRadius = UDim.new(0, radius or 12)
     c.Parent = parent
     return c
 end
 
--- ====================== HELPER: CRIAR BOTÃO ====================== 
-local function makeButton(parent, text, bgColor, size, pos)
+-- ====================== HELPER: CRIAR BOTAO ====================== 
+local function makeButton(parent, text, bgColor, size, pos) 
     local btn = Instance.new("TextButton")
     btn.Size = size
     btn.Position = pos
@@ -91,12 +91,12 @@ local function makeButton(parent, text, bgColor, size, pos)
     btn.BorderSizePixel = 0
     btn.Parent = parent
     addCorner(btn, 10)
-    -- Efeito hover
+    local savedColor = bgColor
     btn.MouseEnter:Connect(function()
-        btn.BackgroundColor3 = btn.BackgroundColor3:Lerp(Color3.fromRGB(255,255,255), 0.15)
+        btn.BackgroundColor3 = savedColor:Lerp(Color3.fromRGB(255,255,255), 0.15)
     end)
     btn.MouseLeave:Connect(function()
-        btn.BackgroundColor3 = bgColor
+        btn.BackgroundColor3 = savedColor
     end)
     return btn
 end
@@ -124,7 +124,7 @@ stroke.Color = Color3.fromRGB(80, 140, 255)
 stroke.Thickness = 2.5
 stroke.Parent = mainFrame
 
--- Gradiente de fundo sutil
+-- Gradiente de fundo
 local grad = Instance.new("UIGradient")
 grad.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 22, 40)),
@@ -133,7 +133,7 @@ grad.Color = ColorSequence.new({
 grad.Rotation = 135
 grad.Parent = mainFrame
 
--- ====================== BARRA DE TÍTULO ====================== 
+-- ====================== BARRA DE TITULO ====================== 
 local titleBar = Instance.new("Frame")
 titleBar.Size = UDim2.new(1, 0, 0, 52)
 titleBar.Position = UDim2.new(0, 0, 0, 0)
@@ -143,7 +143,6 @@ titleBar.ZIndex = 2
 titleBar.Parent = mainFrame
 addCorner(titleBar, 18)
 
--- Gradiente na titleBar
 local titleGrad = Instance.new("UIGradient")
 titleGrad.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 100, 255)),
@@ -152,13 +151,14 @@ titleGrad.Color = ColorSequence.new({
 titleGrad.Rotation = 90
 titleGrad.Parent = titleBar
 
--- Ícone + Título
 local titleIcon = Instance.new("TextLabel")
 titleIcon.Size = UDim2.new(0, 40, 1, 0)
 titleIcon.Position = UDim2.new(0, 12, 0, 0)
 titleIcon.BackgroundTransparency = 1
-titleIcon.Text = "⚡"
+titleIcon.Text = "SP"
+titleIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleIcon.TextScaled = true
+titleIcon.Font = Enum.Font.GothamBlack
 titleIcon.ZIndex = 3
 titleIcon.Parent = titleBar
 
@@ -174,12 +174,11 @@ titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.ZIndex = 3
 titleLabel.Parent = titleBar
 
--- Botão fechar
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 36, 0, 36)
 closeBtn.Position = UDim2.new(1, -44, 0.5, -18)
 closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeBtn.Text = "✕"
+closeBtn.Text = "X"
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.TextScaled = true
 closeBtn.Font = Enum.Font.GothamBold
@@ -229,7 +228,7 @@ sep.BackgroundColor3 = Color3.fromRGB(50, 70, 140)
 sep.BorderSizePixel = 0
 sep.Parent = mainFrame
 
--- ====================== LABEL "QUANTIDADE" ====================== 
+-- ====================== LABEL QUANTIDADE ====================== 
 local qtyLabel = Instance.new("TextLabel")
 qtyLabel.Size = UDim2.new(1, -32, 0, 22)
 qtyLabel.Position = UDim2.new(0, 16, 0, 156)
@@ -268,7 +267,6 @@ textBox.Font = Enum.Font.Gotham
 textBox.ClearTextOnFocus = false
 textBox.Parent = inputBg
 
--- Ativa stroke ao focar
 textBox.Focused:Connect(function()
     inputStroke.Color = Color3.fromRGB(100, 160, 255)
     inputStroke.Thickness = 2
@@ -278,35 +276,33 @@ textBox.FocusLost:Connect(function()
     inputStroke.Thickness = 1.5
 end)
 
--- ====================== BOTÕES LADO A LADO ====================== 
+-- ====================== BOTOES LADO A LADO ====================== 
 local btnRow = Instance.new("Frame")
 btnRow.Size = UDim2.new(1, -32, 0, 44)
 btnRow.Position = UDim2.new(0, 16, 0, 238)
 btnRow.BackgroundTransparency = 1
 btnRow.Parent = mainFrame
 
--- Botão DEFINIR SP
 local setBtn = makeButton(
     btnRow,
-    "🎯  DEFINIR SP",
+    "DEFINIR SP",
     Color3.fromRGB(30, 140, 60),
     UDim2.new(0.48, 0, 1, 0),
     UDim2.new(0, 0, 0, 0)
 )
 
--- Botão ADICIONAR SP
 local addBtn = makeButton(
     btnRow,
-    "➕  ADICIONAR SP",
+    "ADICIONAR SP",
     Color3.fromRGB(30, 100, 220),
     UDim2.new(0.48, 0, 1, 0),
     UDim2.new(0.52, 0, 0, 0)
 )
 
--- ====================== BOTÃO SUBTRAIR SP ====================== 
+-- ====================== BOTAO SUBTRAIR SP ====================== 
 local subBtn = makeButton(
     mainFrame,
-    "➖  SUBTRAIR SP",
+    "SUBTRAIR SP",
     Color3.fromRGB(180, 60, 30),
     UDim2.new(1, -32, 0, 38),
     UDim2.new(0, 16, 0, 294)
@@ -324,49 +320,54 @@ local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -10, 1, 0)
 statusLabel.Position = UDim2.new(0, 8, 0, 0)
 statusLabel.BackgroundTransparency = 1
-statusLabel.Text = skillValue and "✅ Valor interno encontrado: " .. skillValue.Name or "⚠️ Apenas modo visual"
-statusLabel.TextColor3 = skillValue and Color3.fromRGB(80, 220, 120) or Color3.fromRGB(255, 200, 60)
+if skillValue then
+    statusLabel.Text = "Valor interno: " .. skillValue.Name
+    statusLabel.TextColor3 = Color3.fromRGB(80, 220, 120)
+else
+    statusLabel.Text = "Modo visual apenas"
+    statusLabel.TextColor3 = Color3.fromRGB(255, 200, 60)
+end
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Parent = statusBar
 
--- ====================== ATUALIZAÇÃO EM TEMPO REAL ====================== 
-local function updateDisplay()
+-- ====================== ATUALIZACAO EM TEMPO REAL ====================== 
+local function updateDisplay() 
     spDisplay.Text = gameSPLabel.Text
 end
 updateDisplay()
 gameSPLabel:GetPropertyChangedSignal("Text"):Connect(updateDisplay)
 
--- ====================== FUNÇÃO CENTRAL DE APLICAR SP ====================== 
-local function applySP(newVal)
-    if skillValue then
+-- ====================== FUNCAO CENTRAL DE APLICAR SP ====================== 
+local function applySP(newVal) 
+    if skillValue then 
         skillValue.Value = newVal
-    else
+    else 
         gameSPLabel.Text = "SP: " .. newVal
     end
-    updateDisplay()
+    updateDisplay() 
 end
 
--- ====================== BOTÃO: DEFINIR SP ====================== 
-setBtn.MouseButton1Click:Connect(function()
-    local val = tonumber(textBox.Text)
-    if not val or val < 0 then
-        notify("❌ Erro", "Digite um número válido e positivo!", 4)
-        return
-    end
-    local old = skillValue and skillValue.Value or 0
-    applySP(val)
-    notify("✅ SP Definido!", "Antigo: " .. old .. "  →  Novo: " .. val, 5)
-    print("[SP Manager] Definido: " .. old .. " → " .. val)
+-- ====================== BOTAO: DEFINIR SP ====================== 
+setBtn.MouseButton1Click:Connect(function() 
+    local val = tonumber(textBox.Text) 
+    if not val or val < 0 then 
+        notify("Erro", "Digite um numero valido e positivo!", 4) 
+        return 
+    end 
+    local old = skillValue and skillValue.Value or 0 
+    applySP(val) 
+    notify("SP Definido!", "Antigo: " .. old .. " -> Novo: " .. val, 5) 
+    print("[SP Manager] Definido: " .. old .. " -> " .. val) 
 end)
 
--- ====================== BOTÃO: ADICIONAR SP ====================== 
-addBtn.MouseButton1Click:Connect(function()
-    local val = tonumber(textBox.Text)
-    if not val or val < 0 then
-        notify("❌ Erro", "Digite um número válido e positivo!", 4)
-        return
+-- ====================== BOTAO: ADICIONAR SP ====================== 
+addBtn.MouseButton1Click:Connect(function() 
+    local val = tonumber(textBox.Text) 
+    if not val or val < 0 then 
+        notify("Erro", "Digite um numero valido e positivo!", 4)
+        return 
     end
     local current = 0
     if skillValue then
@@ -377,67 +378,67 @@ addBtn.MouseButton1Click:Connect(function()
     end
     local newVal = current + val
     applySP(newVal)
-    notify("✅ SP Adicionado!", "+" .. val .. "  (Total: " .. newVal .. ")", 5)
+    notify("SP Adicionado!", "+" .. val .. " (Total: " .. newVal .. ")", 5)
     print("[SP Manager] Adicionado: " .. current .. " + " .. val .. " = " .. newVal)
 end)
 
--- ====================== BOTÃO: SUBTRAIR SP ====================== 
-subBtn.MouseButton1Click:Connect(function()
-    local val = tonumber(textBox.Text)
-    if not val or val < 0 then
-        notify("❌ Erro", "Digite um número válido e positivo!", 4)
-        return
-    end
-    local current = 0
-    if skillValue then
-        current = skillValue.Value
-    else
-        local raw = gameSPLabel.Text:match("SP:%s*(%d+)")
-        current = tonumber(raw) or 0
-    end
-    local newVal = math.max(0, current - val)
-    applySP(newVal)
-    notify("✅ SP Subtraído!", "-" .. val .. "  (Total: " .. newVal .. ")", 5)
-    print("[SP Manager] Subtraído: " .. current .. " - " .. val .. " = " .. newVal)
+-- ====================== BOTAO: SUBTRAIR SP ====================== 
+subBtn.MouseButton1Click:Connect(function() 
+    local val = tonumber(textBox.Text) 
+    if not val or val < 0 then 
+        notify("Erro", "Digite um numero valido e positivo!", 4) 
+        return 
+    end 
+    local current = 0 
+    if skillValue then 
+        current = skillValue.Value 
+    else 
+        local raw = gameSPLabel.Text:match("SP:%s*(%d+)") 
+        current = tonumber(raw) or 0 
+    end 
+    local newVal = math.max(0, current - val) 
+    applySP(newVal) 
+    notify("SP Subtraido!", "-" .. val .. " (Total: " .. newVal .. ")", 5) 
+    print("[SP Manager] Subtraido: " .. current .. " - " .. val .. " = " .. newVal)
 end)
 
 -- ====================== FECHAR ====================== 
-closeBtn.MouseButton1Click:Connect(function()
-    screenGui:Destroy()
+closeBtn.MouseButton1Click:Connect(function() 
+    screenGui:Destroy() 
 end)
 
 -- ====================== ARRASTAR JANELA ====================== 
 local dragging = false
 local dragStart, frameStart
 
-titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        frameStart = mainFrame.Position
-    end
+titleBar.InputBegan:Connect(function(input) 
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+        dragging = true 
+        dragStart = input.Position 
+        frameStart = mainFrame.Position 
+    end 
 end)
 
-titleBar.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
+titleBar.InputChanged:Connect(function(input) 
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then 
+        local delta = input.Position - dragStart 
         mainFrame.Position = UDim2.new(
             frameStart.X.Scale, frameStart.X.Offset + delta.X,
-            frameStart.Y.Scale, frameStart.Y.Offset + delta.Y
-        )
-    end
+            frameStart.Y.Scale, frameStart.Y.Offset + delta.Y 
+        ) 
+    end 
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
-    end
+UserInputService.InputEnded:Connect(function(input) 
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+        dragging = false 
+    end 
 end)
 
--- ====================== NOTIFICAÇÃO INICIAL ====================== 
+-- ====================== NOTIFICACAO INICIAL ====================== 
 notify(
-    "⚡ SP Manager Carregado!",
-    "Use DEFINIR, ADICIONAR ou SUBTRAIR SP.\nArraste pelo título para mover.",
+    "SP Manager Carregado!",
+    "Use DEFINIR, ADICIONAR ou SUBTRAIR SP.\nArraste pelo titulo para mover.",
     7
 )
-print("✅ SP Manager carregado com sucesso!")
+print("SP Manager carregado com sucesso!")
