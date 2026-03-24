@@ -1,5 +1,6 @@
 -- =============================================
 --  MENU GUI - MODIFICAR / ADICIONAR SP REAL
+--  Busca ampla: leaderstats, Estatisticas, e mais
 --  Design Moderno | Delta Executor
 -- =============================================
 
@@ -11,58 +12,6 @@ local player = Players.LocalPlayer
 -- Remove menu antigo
 if player.PlayerGui:FindFirstChild("SP_Menu_GUI") then
     player.PlayerGui.SP_Menu_GUI:Destroy()
-end
-
--- ====================== ENCONTRA SP DA TELA ====================== 
-local gameSPLabel = nil
-local function findLeftSP()
-    local candidates = {}
-    for _, obj in ipairs(player.PlayerGui:GetDescendants()) do
-        if obj:IsA("TextLabel") and obj.Text:find("SP:") then
-            table.insert(candidates, obj)
-        end
-    end
-    if #candidates == 0 then return false end
-    local best = candidates[1]
-    local minX = best.AbsolutePosition.X
-    for _, lbl in ipairs(candidates) do
-        if lbl.AbsolutePosition.X < minX then
-            minX = lbl.AbsolutePosition.X
-            best = lbl
-        end
-    end
-    gameSPLabel = best
-    return true
-end
-
--- ====================== ENCONTRA VALOR INTERNO REAL ======================
-local skillValue = nil
-local function findRealSPValue()
-    for _, v in ipairs(player:GetDescendants()) do
-        if (v:IsA("IntValue") or v:IsA("NumberValue")) then
-            local name = v.Name:lower()
-            if name:find("sp") or name:find("skill") or name:find("point") or
-               name:find("habilidade") or name:find("pontos") then
-                skillValue = v
-                print("Valor REAL encontrado! Nome: " .. v.Name .. " | Valor: " .. v.Value)
-                return true
-            end
-        end
-    end
-    return false
-end
-
--- Espera encontrar os dois (maximo 12 segundos)
-local startTime = tick()
-repeat
-    findLeftSP()
-    findRealSPValue()
-    task.wait(0.4)
-until (gameSPLabel and skillValue) or (tick() - startTime > 12)
-
-if not gameSPLabel then
-    StarterGui:SetCore("SendNotification", {Title="Erro", Text="Nao encontrou SP na tela.", Duration=6})
-    return
 end
 
 -- ====================== HELPERS ======================
@@ -99,17 +48,134 @@ local function makeButton(parent, text, bgColor, size, pos)
     return btn
 end
 
--- ====================== SCREENGUI ======================
+-- ====================== ENCONTRA SP DA TELA ====================== 
+local gameSPLabel = nil
+local function findLeftSP()
+    local candidates = {}
+    for _, obj in ipairs(player.PlayerGui:GetDescendants()) do
+        if obj:IsA("TextLabel") and obj.Text:find("SP:") then
+            table.insert(candidates, obj)
+        end
+    end
+    if #candidates == 0 then return false end
+    local best = candidates[1]
+    local minX = best.AbsolutePosition.X
+    for _, lbl in ipairs(candidates) do
+        if lbl.AbsolutePosition.X < minX then
+            minX = lbl.AbsolutePosition.X
+            best = lbl
+        end
+    end
+    gameSPLabel = best
+    return true
+end
+
+-- ====================== BUSCA AMPLA DO VALOR INTERNO ====================== 
+-- Imprime TUDO que encontrar para facilitar debug
+local skillValue = nil
+
+local function debugPrintAllValues()
+    print("=== [SP Manager] ESCANEANDO TODOS OS VALORES DO PLAYER ===")
+    for _, v in ipairs(player:GetDescendants()) do
+        if v:IsA("IntValue") or v:IsA("NumberValue") or v:IsA("StringValue") then
+            print("  [" .. v.ClassName .. "] " .. v:GetFullName() .. " = " .. tostring(v.Value))
+        end
+    end
+    print("=== FIM DO ESCANEAMENTO ===")
+end
+
+local function findRealSPValue()
+    -- 1) Procura em leaderstats
+    local leaderstats = player:FindFirstChild("leaderstats")
+    if leaderstats then
+        for _, v in ipairs(leaderstats:GetChildren()) do
+            if v:IsA("IntValue") or v:IsA("NumberValue") then
+                local name = v.Name:lower()
+                if name:find("sp") or name:find("skill") or name:find("point") or
+                   name:find("habilidade") or name:find("pontos") or name:find("estat") then
+                    skillValue = v
+                    print("[SP Manager] Encontrado em leaderstats: " .. v.Name .. " = " .. v.Value)
+                    return true
+                end
+            end
+        end
+    end
+
+    -- 2) Procura em pasta chamada "Estatisticas", "Stats", "Attributes" ou similar
+    local statsFolderNames = {"Estatisticas", "Estatísticas", "Stats", "Attributes", "Data", "PlayerData", "PlayerStats"}
+    for _, folderName in ipairs(statsFolderNames) do
+        local folder = player:FindFirstChild(folderName)
+        if folder then
+            for _, v in ipairs(folder:GetDescendants()) do
+                if v:IsA("IntValue") or v:IsA("NumberValue") then
+                    local name = v.Name:lower()
+                    if name:find("sp") or name:find("skill") or name:find("point") or
+                       name:find("habilidade") or name:find("pontos") then
+                        skillValue = v
+                        print("[SP Manager] Encontrado em '" .. folderName .. "': " .. v.Name .. " = " .. v.Value)
+                        return true
+                    end
+                end
+            end
+            -- Se a pasta existe mas nao achou pelo nome, pega o primeiro IntValue/NumberValue dela
+            for _, v in ipairs(folder:GetChildren()) do
+                if v:IsA("IntValue") or v:IsA("NumberValue") then
+                    skillValue = v
+                    print("[SP Manager] Usando primeiro valor de '" .. folderName .. ": " .. v.Name .. " = " .. v.Value)
+                    return true
+                end
+            end
+        end
+    end
+
+    -- 3) Busca geral em todos os descendentes do player
+    for _, v in ipairs(player:GetDescendants()) do
+        if v:IsA("IntValue") or v:IsA("NumberValue") then
+            local name = v.Name:lower()
+            if name:find("sp") or name:find("skill") or name:find("point") or
+               name:find("habilidade") or name:find("pontos") then
+                skillValue = v
+                print("[SP Manager] Encontrado (busca geral): " .. v:GetFullName() .. " = " .. v.Value)
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+-- Espera encontrar os valores (maximo 15 segundos)
+local startTime = tick()
+do
+    findLeftSP()
+    if not skillValue then findRealSPValue() end
+    task.wait(0.4)
+end until (gameSPLabel and skillValue) or (tick() - startTime > 15)
+
+-- Imprime todos os valores para debug (ver no console do executor)
+debugPrintAllValues()
+
+if not gameSPLabel then
+    notify("Erro", "Nao encontrou SP na tela.", 6)
+    return
+end
+
+if not skillValue then
+    print("[SP Manager] AVISO: Nenhum valor interno encontrado. Funcionando em modo visual.")
+    notify("Aviso", "SP so pode ser alterado visualmente.\nVeja o console para detalhes.\n", 7)
+end
+
+-- ====================== SCREENGUI ====================== 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "SP_Menu_GUI"
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- ====================== FRAME PRINCIPAL ======================
+-- ====================== FRAME PRINCIPAL ====================== 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 420, 0, 370)
-mainFrame.Position = UDim2.new(0.5, -210, 0.5, -185)
+mainFrame.Size = UDim2.new(0, 420, 0, 390)
+mainFrame.Position = UDim2.new(0.5, -210, 0.5, -195)
 mainFrame.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
@@ -129,15 +195,13 @@ grad.Color = ColorSequence.new({
 grad.Rotation = 135
 grad.Parent = mainFrame
 
--- ====================== BARRA DE TITULO ======================
+-- ====================== BARRA DE TITULO ====================== 
 local titleBar = Instance.new("Frame")
 titleBar.Size = UDim2.new(1, 0, 0, 52)
 titleBar.Position = UDim2.new(0, 0, 0, 0)
 titleBar.BackgroundColor3 = Color3.fromRGB(30, 80, 200)
 titleBar.BorderSizePixel = 0
-cZIndex = 2
-titleBar.Parent = mainFrame
-addCorner(titleBar, 18)
+titleBar.ZIndex = 2
 
 local titleGrad = Instance.new("UIGradient")
 titleGrad.Color = ColorSequence.new({
@@ -182,10 +246,35 @@ closeBtn.ZIndex = 4
 closeBtn.Parent = titleBar
 addCorner(closeBtn, 8)
 
--- ====================== DISPLAY SP ATUAL ======================
+-- ====================== INFO: VALOR ENCONTRADO ====================== 
+local infoBar = Instance.new("Frame")
+infoBar.Size = UDim2.new(1, -32, 0, 28)
+infoBar.Position = UDim2.new(0, 16, 0, 58)
+infoBar.BackgroundColor3 = Color3.fromRGB(18, 30, 60)
+infoBar.BorderSizePixel = 0
+infoBar.Parent = mainFrame
+addCorner(infoBar, 8)
+
+local infoLabel = Instance.new("TextLabel")
+infoLabel.Size = UDim2.new(1, -10, 1, 0)
+infoLabel.Position = UDim2.new(0, 8, 0, 0)
+infoLabel.BackgroundTransparency = 1
+infoLabel.TextScaled = true
+infoLabel.Font = Enum.Font.Gotham
+infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+infoLabel.Parent = infoBar
+if skillValue then
+    infoLabel.Text = "Valor: " .. skillValue:GetFullName()
+    infoLabel.TextColor3 = Color3.fromRGB(80, 220, 120)
+else
+    infoLabel.Text = "Valor interno nao encontrado — modo visual"
+    infoLabel.TextColor3 = Color3.fromRGB(255, 160, 40)
+end
+
+-- ====================== DISPLAY SP ATUAL ====================== 
 local spBg = Instance.new("Frame")
-spBg.Size = UDim2.new(1, -32, 0, 72)
-spBg.Position = UDim2.new(0, 16, 0, 62)
+spBg.Size = UDim2.new(1, -32, 0, 66)
+spBg.Position = UDim2.new(0, 16, 0, 94)
 spBg.BackgroundColor3 = Color3.fromRGB(20, 26, 50)
 spBg.BorderSizePixel = 0
 spBg.Parent = mainFrame
@@ -197,7 +286,7 @@ spStroke.Thickness = 1.5
 spStroke.Parent = spBg
 
 local spSubLabel = Instance.new("TextLabel")
-spSubLabel.Size = UDim2.new(1, 0, 0, 22)
+spSubLabel.Size = UDim2.new(1, 0, 0, 20)
 spSubLabel.Position = UDim2.new(0, 0, 0, 6)
 spSubLabel.BackgroundTransparency = 1
 spSubLabel.Text = "SP ATUAL"
@@ -207,8 +296,8 @@ spSubLabel.Font = Enum.Font.GothamSemibold
 spSubLabel.Parent = spBg
 
 local spDisplay = Instance.new("TextLabel")
-spDisplay.Size = UDim2.new(1, -20, 0, 36)
-spDisplay.Position = UDim2.new(0, 10, 0, 28)
+spDisplay.Size = UDim2.new(1, -20, 0, 34)
+spDisplay.Position = UDim2.new(0, 10, 0, 26)
 spDisplay.BackgroundTransparency = 1
 spDisplay.Text = gameSPLabel.Text
 spDisplay.TextColor3 = Color3.fromRGB(80, 255, 160)
@@ -216,18 +305,18 @@ spDisplay.TextScaled = true
 spDisplay.Font = Enum.Font.GothamBlack
 spDisplay.Parent = spBg
 
--- ====================== SEPARADOR ======================
+-- ====================== SEPARADOR ====================== 
 local sep = Instance.new("Frame")
 sep.Size = UDim2.new(1, -32, 0, 1)
-sep.Position = UDim2.new(0, 16, 0, 146)
+sep.Position = UDim2.new(0, 16, 0, 170)
 sep.BackgroundColor3 = Color3.fromRGB(50, 70, 140)
 sep.BorderSizePixel = 0
 sep.Parent = mainFrame
 
--- ====================== LABEL QUANTIDADE ======================
+-- ====================== LABEL QUANTIDADE ====================== 
 local qtyLabel = Instance.new("TextLabel")
-qtyLabel.Size = UDim2.new(1, -32, 0, 22)
-qtyLabel.Position = UDim2.new(0, 16, 0, 156)
+qtyLabel.Size = UDim2.new(1, -32, 0, 20)
+qtyLabel.Position = UDim2.new(0, 16, 0, 180)
 qtyLabel.BackgroundTransparency = 1
 qtyLabel.Text = "QUANTIDADE DE SP"
 qtyLabel.TextColor3 = Color3.fromRGB(160, 180, 255)
@@ -236,10 +325,10 @@ qtyLabel.Font = Enum.Font.GothamSemibold
 qtyLabel.TextXAlignment = Enum.TextXAlignment.Left
 qtyLabel.Parent = mainFrame
 
--- ====================== CAIXA DE TEXTO ======================
+-- ====================== CAIXA DE TEXTO ====================== 
 local inputBg = Instance.new("Frame")
 inputBg.Size = UDim2.new(1, -32, 0, 44)
-inputBg.Position = UDim2.new(0, 16, 0, 182)
+inputBg.Position = UDim2.new(0, 16, 0, 204)
 inputBg.BackgroundColor3 = Color3.fromRGB(22, 28, 52)
 inputBg.BorderSizePixel = 0
 inputBg.Parent = mainFrame
@@ -272,10 +361,10 @@ textBox.FocusLost:Connect(function()
     inputStroke.Thickness = 1.5
 end)
 
--- ====================== BOTOES ======================
+-- ====================== BOTOES ====================== 
 local btnRow = Instance.new("Frame")
 btnRow.Size = UDim2.new(1, -32, 0, 44)
-btnRow.Position = UDim2.new(0, 16, 0, 238)
+btnRow.Position = UDim2.new(0, 16, 0, 260)
 btnRow.BackgroundTransparency = 1
 btnRow.Parent = mainFrame
 
@@ -297,10 +386,10 @@ local subBtn = makeButton(
     mainFrame, "SUBTRAIR SP",
     Color3.fromRGB(180, 60, 30),
     UDim2.new(1, -32, 0, 38),
-    UDim2.new(0, 16, 0, 294)
+    UDim2.new(0, 16, 0, 316)
 )
 
--- ====================== STATUS BAR ======================
+-- ====================== STATUS BAR ====================== 
 local statusBar = Instance.new("Frame")
 statusBar.Size = UDim2.new(1, 0, 0, 26)
 statusBar.Position = UDim2.new(0, 0, 1, -26)
@@ -312,36 +401,51 @@ local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, -10, 1, 0)
 statusLabel.Position = UDim2.new(0, 8, 0, 0)
 statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Pronto."
+statusLabel.TextColor3 = Color3.fromRGB(180, 200, 255)
 statusLabel.TextScaled = true
 statusLabel.Font = Enum.Font.Gotham
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Parent = statusBar
-if skillValue then
-    statusLabel.Text = "Valor interno: " .. skillValue.Name
-    statusLabel.TextColor3 = Color3.fromRGB(80, 220, 120)
-else
-    statusLabel.Text = "Modo visual apenas"
-    statusLabel.TextColor3 = Color3.fromRGB(255, 200, 60)
-end
 
--- ====================== ATUALIZACAO EM TEMPO REAL ======================
+-- ====================== ATUALIZACAO EM TEMPO REAL ====================== 
 local function updateDisplay()
     spDisplay.Text = gameSPLabel.Text
+    if skillValue then
+        -- Atualiza infoLabel com valor atual do objeto
+        infoLabel.Text = skillValue:GetFullName() .. " = " .. tostring(skillValue.Value)
+        infoLabel.TextColor3 = Color3.fromRGB(80, 220, 120)
+    end
 end
 updateDisplay()
 gameSPLabel:GetPropertyChangedSignal("Text"):Connect(updateDisplay)
 
--- ====================== FUNCAO CENTRAL ======================
+-- ====================== FUNCAO CENTRAL ====================== 
 local function applySP(newVal)
     if skillValue then
-        skillValue.Value = newVal
+        -- Tenta modificar o valor interno
+        local ok, err = pcall(function()
+            skillValue.Value = newVal
+        end)
+        if not ok then
+            print("[SP Manager] Erro ao modificar valor interno: " .. tostring(err))
+            -- Fallback visual
+            gameSPLabel.Text = "SP: " .. newVal
+            statusLabel.Text = "Erro interno — alterado visualmente"
+            statusLabel.TextColor3 = Color3.fromRGB(255, 160, 40)
+        else
+            statusLabel.Text = "Valor alterado: " .. tostring(newVal)
+            statusLabel.TextColor3 = Color3.fromRGB(80, 220, 120)
+        end
     else
         gameSPLabel.Text = "SP: " .. newVal
+        statusLabel.Text = "Modo visual — alterado na tela"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 200, 60)
     end
     updateDisplay()
 end
 
--- ====================== BOTAO: DEFINIR SP ======================
+-- ====================== BOTAO: DEFINIR SP ====================== 
 setBtn.MouseButton1Click:Connect(function()
     local val = tonumber(textBox.Text)
     if not val or val < 0 then
@@ -354,7 +458,7 @@ setBtn.MouseButton1Click:Connect(function()
     print("[SP Manager] Definido: " .. old .. " -> " .. val)
 end)
 
--- ====================== BOTAO: ADICIONAR SP ======================
+-- ====================== BOTAO: ADICIONAR SP ====================== 
 addBtn.MouseButton1Click:Connect(function()
     local val = tonumber(textBox.Text)
     if not val or val < 0 then
@@ -374,7 +478,7 @@ addBtn.MouseButton1Click:Connect(function()
     print("[SP Manager] Adicionado: " .. current .. " + " .. val .. " = " .. newVal)
 end)
 
--- ====================== BOTAO: SUBTRAIR SP ======================
+-- ====================== BOTAO: SUBTRAIR SP ====================== 
 subBtn.MouseButton1Click:Connect(function()
     local val = tonumber(textBox.Text)
     if not val or val < 0 then
@@ -394,12 +498,12 @@ subBtn.MouseButton1Click:Connect(function()
     print("[SP Manager] Subtraido: " .. current .. " - " .. val .. " = " .. newVal)
 end)
 
--- ====================== FECHAR ======================
+-- ====================== FECHAR ====================== 
 closeBtn.MouseButton1Click:Connect(function()
     screenGui:Destroy()
 end)
 
--- ====================== ARRASTAR JANELA ======================
+-- ====================== ARRASTAR JANELA ====================== 
 local dragging = false
 local dragStart, frameStart
 
@@ -427,10 +531,10 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- ====================== NOTIFICACAO INICIAL ======================
+-- ====================== NOTIFICACAO INICIAL ====================== 
 notify(
     "SP Manager Carregado!",
     "Use DEFINIR, ADICIONAR ou SUBTRAIR SP.\nArraste pelo titulo para mover.",
     7
 )
-print("SP Manager carregado com sucesso!")
+print("[SP Manager] Carregado! skillValue = " .. (skillValue and skillValue:GetFullName() or "NAO ENCONTRADO"))
